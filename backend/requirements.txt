@@ -1,5 +1,10 @@
+requests==2.26.0
 Django==3.2.3
+django-filter
 djangorestframework==3.12.4
-djoser==2.1.0
+djoser
 python-dotenv
 Pillow==9.0.0
+djangorestframework-simplejwt
+django-import-export==3.2.0
+django-filter
