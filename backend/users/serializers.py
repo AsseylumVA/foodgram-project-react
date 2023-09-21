@@ -5,17 +5,24 @@ from .models import User
 
 
 class UserSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name',
-                  'bio', 'role')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name',
+                  'is_subscribed')
         validators = [
             UniqueTogetherValidator(
                 queryset=User.objects.all(),
                 fields=('username', 'email')
             )
         ]
+
+    def get_is_subscribed(self, obj):
+        user = self.context.get('request').user
+        if not user.is_authenticated or user == obj:
+            return False
+        return user.following.filter(author=obj).exists()
 
 
 class UserMeSerializer(UserSerializer):
