@@ -1,11 +1,11 @@
 from rest_framework import serializers
 from rest_framework.generics import get_object_or_404
+from djoser.serializers import UserSerializer
 
 from recipes.models import (Tag,
                             Ingredient,
                             Recipe,
                             Favorite)
-from users.serializers import UserSerializer
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -44,3 +44,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         if not user.is_authenticated:
             return False
         return user.favorites.filter(recipe=obj).exists()
+
+
+class RecipeCreateSerializer(serializers.ModelSerializer):
+    pass

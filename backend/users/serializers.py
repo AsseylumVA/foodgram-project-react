@@ -1,56 +1,26 @@
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
-
-from .models import User
+from djoser.serializers import UserSerializer, UserCreateSerializer
 
 
-class UserSerializer(serializers.ModelSerializer):
+User = get_user_model()
+
+
+class CustomUserCreateSerializer(UserCreateSerializer):
+    first_name = serializers.CharField(max_length=150, required=True)
+    last_name = serializers.CharField(max_length=150, required=True)
+
+
+class CustomUserSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name',
-                  'is_subscribed')
-        validators = [
-            UniqueTogetherValidator(
-                queryset=User.objects.all(),
-                fields=('username', 'email')
-            )
-        ]
+        fields = ('email', 'id', 'username',
+                  'first_name', 'last_name', 'is_subscribed')
 
     def get_is_subscribed(self, obj):
-        user = self.context.get('request').user
-        if not user.is_authenticated or user == obj:
+        request = self.context.get('request')
+        if request is None or not request.user.is_authenticated:
             return False
-        return user.following.filter(author=obj).exists()
-
-
-class UserMeSerializer(UserSerializer):
-    role = serializers.CharField(read_only=True)
-
-
-class UserSingupSerializer(serializers.Serializer):
-
-    username = serializers.RegexField(
-        r'^[\w.@+-]+$',
-        max_length=150,
-        required=True
-    )
-    email = serializers.EmailField(max_length=254, required=True)
-
-    def validate_username(self, value):
-        if value == 'me':
-            raise serializers.ValidationError(
-                'username ''me'' is not avilable')
-        return value
-
-
-class UserCreateTokenSerializer(serializers.Serializer):
-    username = serializers.RegexField(
-        r'^[\w.@+-]+$',
-        max_length=150,
-        required=True
-    )
-    confirmation_code = serializers.CharField(
-        required=True,
-    )
+        return request.user.following.filter(following=obj).exists()

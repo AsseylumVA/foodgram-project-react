@@ -3,39 +3,33 @@ from django.db import models
 
 
 class User(AbstractUser):
-    ADMIN = 'admin'
-    MODER = 'moderator'
-    USER = 'user'
-    ROLE_CHOICES = (
-        (ADMIN, 'admin'),
-        (MODER, 'moderator'),
-        (USER, 'user'),
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+
+    email = models.EmailField(max_length=254, unique=True)
+
+
+class Subscription(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='follower',
+        verbose_name='Пользователь',
+    )
+    following = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='following',
+        verbose_name='Подписки',
     )
 
-    email = models.EmailField(
-        'Электронная почта',
-        unique=True,
-    )
-
-    bio = models.TextField(
-        'Биография',
-        blank=True,
-    )
-    role = models.CharField(
-        'Роль',
-        max_length=25,
-        choices=ROLE_CHOICES,
-        default=USER
-    )
-    confirmation_code = models.TextField(
-        'Код подтверждения',
-        blank=True
-    )
-
-    @property
-    def is_admin(self):
-        return self.role == self.ADMIN or self.is_staff
-
-    @property
-    def is_moderator(self):
-        return self.role == self.MODER or self.is_admin
+    class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'following'),
+                name='unique_follow',
+            ),
+        )

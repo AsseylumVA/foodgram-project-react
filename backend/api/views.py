@@ -1,10 +1,11 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, mixins, viewsets
+from rest_framework import viewsets, permissions
 
-from api.paginators import PageLimitPagination
-from api.serializers import (IngredientSerializer,
-                             TagSerializer,
-                             RecipeSerializer,)
+from .permissions import AuthorOrReadOnly
+from .serializers import (IngredientSerializer,
+                          TagSerializer,
+                          RecipeSerializer,
+                          RecipeCreateSerializer)
 from recipes.models import (Ingredient,
                             Recipe,
                             Tag,)
@@ -12,16 +13,27 @@ from recipes.models import (Ingredient,
 
 class TagViewSet(viewsets.ModelViewSet):
     serializer_class = TagSerializer
+    permission_classes = (permissions.AllowAny,)
+    pagination_class = None
     queryset = Tag.objects.all()
+    http_method_names = ('get',)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     serializer_class = IngredientSerializer
+    permission_classes = (permissions.AllowAny,)
+    pagination_class = None
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('name',)
     queryset = Ingredient.objects.all()
+    http_method_names = ('get',)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    serializer_class = RecipeSerializer
     queryset = Recipe.objects.all()
-    # filter_backends = (DjangoFilterBackend,)
-    pagination_class = PageLimitPagination
+    permission_classes = (AuthorOrReadOnly,)
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return RecipeSerializer
+        return RecipeCreateSerializer

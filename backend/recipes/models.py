@@ -12,7 +12,10 @@ class Tag(models.Model):
 
 class Ingredient(models.Model):
     name = models.CharField(max_length=256)
-    unit = models.CharField(verbose_name="Единицы измерения", max_length=24)
+    measurement_unit = models.CharField(
+        verbose_name="Единицы измерения",
+        max_length=24
+    )
 
 
 class Recipe(models.Model):
@@ -58,28 +61,3 @@ class Favorite(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     date_added = models.DateTimeField('Дата добавления', auto_now_add=True)
-
-
-class Subscription(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='follower',
-        verbose_name='Подписчик',
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='following',
-        verbose_name='Автор',
-    )
-
-    class Meta:
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-        constraints = (
-            models.UniqueConstraint(
-                fields=('user', 'author'),
-                name='unique_follow',
-            ),
-        )
