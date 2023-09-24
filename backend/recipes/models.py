@@ -19,11 +19,10 @@ class Ingredient(models.Model):
 
 
 class Recipe(models.Model):
-    name = models.CharField(max_length=256)
+    name = models.CharField(max_length=200)
     text = models.TextField()
     image = models.ImageField(
         upload_to='recipes/images/',
-        null=True,
         default=None
     )
     author = models.ForeignKey(
@@ -35,12 +34,9 @@ class Recipe(models.Model):
     tags = models.ManyToManyField(Tag)
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='RecipeIngredient')
+        through='IngredientRecipe')
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
-    cooking_time = models.PositiveSmallIntegerField(
-        'Время приготовления',
-        default=0,
-    )
+    cooking_time = models.PositiveSmallIntegerField('Время приготовления',)
 
 
 class TagRecipe(models.Model):
@@ -51,13 +47,21 @@ class TagRecipe(models.Model):
         return f'{self.tag} {self.recipe}'
 
 
-class RecipeIngredient(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
-    amount = models.PositiveSmallIntegerField('Количество', default=0)
+class IngredientRecipe(models.Model):
+    recipe = models.ForeignKey(Recipe,
+                               on_delete=models.CASCADE,
+                               related_name='ingredientrecipes',)
+    ingredient = models.ForeignKey(Ingredient,
+                                   on_delete=models.CASCADE,
+                                   related_name='ingredientrecipes',)
+    amount = models.IntegerField('Количество', null=True)
 
 
 class Favorite(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='favorites')
+    recipe = models.ForeignKey(Recipe,
+                               on_delete=models.CASCADE,
+                               related_name='favorites')
     date_added = models.DateTimeField('Дата добавления', auto_now_add=True)

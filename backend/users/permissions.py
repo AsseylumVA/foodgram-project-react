@@ -3,7 +3,7 @@ from rest_framework import permissions
 
 class IsAuthenticatedOrReadOnlyNotMe(permissions.BasePermission):
     def has_permission(self, request, view):
-        if view.action == 'me':
+        if view.action == 'me' and not request.user.is_authenticated:
             return False
         return (
             request.user.is_authenticated

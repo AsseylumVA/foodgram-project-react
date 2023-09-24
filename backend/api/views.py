@@ -1,6 +1,7 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, permissions
 
+from .filters import RecipeFilter
 from .permissions import AuthorOrReadOnly
 from .serializers import (IngredientSerializer,
                           TagSerializer,
@@ -32,8 +33,10 @@ class IngredientViewSet(viewsets.ModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (AuthorOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
 
     def get_serializer_class(self):
-        if self.request.method == 'GET':
-            return RecipeSerializer
-        return RecipeCreateSerializer
+        if self.request.method in ('POST', 'PATCH', 'DELETE'):
+            return RecipeCreateSerializer
+        return RecipeSerializer
