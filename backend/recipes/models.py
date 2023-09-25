@@ -50,10 +50,10 @@ class TagRecipe(models.Model):
 class IngredientRecipe(models.Model):
     recipe = models.ForeignKey(Recipe,
                                on_delete=models.CASCADE,
-                               related_name='ingredientrecipes',)
+                               related_name='recipe_ingredients',)
     ingredient = models.ForeignKey(Ingredient,
                                    on_delete=models.CASCADE,
-                                   related_name='ingredientrecipes',)
+                                   related_name='recipe_ingredients',)
     amount = models.IntegerField('Количество', null=True)
 
 
@@ -64,4 +64,3 @@ class Favorite(models.Model):
     recipe = models.ForeignKey(Recipe,
                                on_delete=models.CASCADE,
                                related_name='favorites')
-    date_added = models.DateTimeField('Дата добавления', auto_now_add=True)

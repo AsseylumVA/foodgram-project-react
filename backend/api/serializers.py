@@ -2,7 +2,6 @@ import base64
 
 from django.core.files.base import ContentFile
 from django.core.validators import MinValueValidator
-from django.db import transaction
 from rest_framework import serializers
 
 from recipes.models import (Tag,
@@ -56,7 +55,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     ingredients = IngredientRecipeSerializer(many=True,
                                              read_only=True,
-                                             source='ingredientrecipes')
+                                             source='recipe_ingredients')
     image = serializers.SerializerMethodField('get_image_url', read_only=True)
     is_favorited = serializers.SerializerMethodField(read_only=True)
     author = CustomUserSerializer(read_only=True)
@@ -108,7 +107,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     image = Base64ImageField(required=True)
     ingredients = IngredientRecipePostSerializer(
         many=True,
-        source='ingredientrecipes'
+        source='recipe_ingredients'
         )
     cooking_time = serializers.IntegerField(
         validators=(MinValueValidator(
@@ -134,17 +133,22 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'errors': 'Добавлены одинаковые теги'}
             )
-
-        if not data.get('ingredientrecipes'):
+        if not data.get('recipe_ingredients'):
             raise serializers.ValidationError(
                 {'errors': 'Не добавлены ингредиенты'}
             )
+        ingredients = list(map(lambda x: x['id'],
+                               data.get('recipe_ingredients')))
+        if len(set(ingredients)) != len(ingredients):
+            raise serializers.ValidationError(
+                {'errors': 'нельзя добавить два одинаковых ингредиента'}
+            )
+
         return data
 
-    @transaction.atomic
     def create(self, validated_data):
         user = self.context.get('request').user
-        ingredients_data = validated_data.pop('ingredientrecipes')
+        ingredients_data = validated_data.pop('recipe_ingredients')
         tags_data = validated_data.pop('tags')
         recipe = Recipe.objects.create(author=user, **validated_data)
         recipe.tags.set(tags_data)
@@ -152,19 +156,13 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         for ingredient_data in ingredients_data:
             ingredient_obj = ingredient_data.get('id')
             amount = ingredient_data.get('amount')
-            if (IngredientRecipe.objects.filter(
-                    recipe=recipe, ingredient=ingredient_obj).exists()):
-                raise serializers.ValidationError(
-                    {'errors': 'нельзя добавить два одинаковых ингредиента'}
-                )
             IngredientRecipe.objects.create(
                 recipe=recipe, ingredient=ingredient_obj, amount=amount
             )
         return recipe
 
-    @transaction.atomic
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop('ingredientrecipes')
+        ingredients_data = validated_data.pop('recipe_ingredients')
         IngredientRecipe.objects.filter(recipe=instance).delete()
 
         tags_data = validated_data.pop('tags')
@@ -179,11 +177,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         for ingredient_data in ingredients_data:
             ingredient_obj = ingredient_data.get('id')
             amount = ingredient_data.get('amount')
-            if (IngredientRecipe.objects.filter(
-                    recipe=instance, ingredient=ingredient_obj).exists()):
-                raise serializers.ValidationError(
-                    {'errors': 'нельзя добавить два одинаковых ингредиента'}
-                )
             IngredientRecipe.objects.create(
                 recipe=instance, ingredient=ingredient_obj, amount=amount
             )
