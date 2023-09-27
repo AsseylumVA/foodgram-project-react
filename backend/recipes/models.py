@@ -43,9 +43,6 @@ class TagRecipe(models.Model):
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
 
-    def __str__(self):
-        return f'{self.tag} {self.recipe}'
-
 
 class IngredientRecipe(models.Model):
     recipe = models.ForeignKey(Recipe,
@@ -64,3 +61,12 @@ class Favorite(models.Model):
     recipe = models.ForeignKey(Recipe,
                                on_delete=models.CASCADE,
                                related_name='favorites')
+
+
+class ShoppingCart(models.Model):
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='shopping_cart')
+    recipe = models.ForeignKey(Recipe,
+                               on_delete=models.CASCADE,
+                               related_name='shopping_cart')

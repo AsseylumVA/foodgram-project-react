@@ -1,16 +1,20 @@
 import base64
 
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.core.validators import MinValueValidator
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 from recipes.models import (Tag,
                             Ingredient,
                             Recipe,
                             IngredientRecipe,
                             Favorite)
+from users.models import Subscription
 from users.serializers import CustomUserSerializer
 
+User = get_user_model()
 
 MIN_INGREDIENT_AMOUNT = 1
 
@@ -81,7 +85,12 @@ class RecipeSerializer(serializers.ModelSerializer):
         return user.favorites.filter(recipe=obj).exists()
 
     def get_is_in_shopping_cart(self, obj):
-        return False
+        if not self.context:
+            return False
+        user = self.context.get('request').user
+        if not user.is_authenticated:
+            return False
+        return user.shopping_cart.filter(recipe=obj).exists()
 
 
 class IngredientRecipePostSerializer(serializers.ModelSerializer):
@@ -91,9 +100,8 @@ class IngredientRecipePostSerializer(serializers.ModelSerializer):
     amount = serializers.IntegerField(
         validators=(
             MinValueValidator(
-                limit_value=MIN_INGREDIENT_AMOUNT,
-                message=(f'Количество ингредиента не может быть '
-                         f'меньше {MIN_INGREDIENT_AMOUNT}')
+                limit_value=1,
+                message=('Количество ингредиента не может быть меньше 1')
             ),
         )
     )
@@ -128,8 +136,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'errors': 'Не добавлены теги'}
             )
-        unique_tags = list(set(tags))
-        if len(tags) != len(unique_tags):
+        if len(tags) != len(set(tags)):
             raise serializers.ValidationError(
                 {'errors': 'Добавлены одинаковые теги'}
             )
@@ -186,3 +193,75 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         serializer = RecipeSerializer(instance)
         return serializer.data
+
+
+class ReceipSmallSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe',)
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=('user', 'recipe'),
+                message='Рецепт уже добавлен в избранное'
+            )
+        ]
+
+    def to_representation(self, instance):
+        serializer = ReceipSmallSerializer(instance.recipe)
+        return serializer.data
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = '__all__'
+
+    def validate(self, data):
+        user = data.get('user')
+        author = data.get('author')
+        if user == author:
+            raise serializers.ValidationError(
+                {'errors': 'Нельзя подписаться на самого себя.'}
+            )
+        if Subscription.objects.filter(user=user, author=author).exists():
+            raise serializers.ValidationError(
+                {'errors': 'Вы уже подписаны'}
+            )
+        return data
+
+    def to_representation(self, instance):
+        request = self.context.get('request')
+        return SubscribeReprSerializer(instance.author,
+                                       context={'request': request}).data
+
+
+class SubscribeReprSerializer(CustomUserSerializer):
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username',
+                  'first_name', 'last_name', 'is_subscribed',
+                  'recipes', 'recipes_count')
+        read_only_fields = ('email', 'id', 'username',
+                            'first_name', 'last_name', 'is_subscribed',
+                            'recipes', 'recipes_count')
+
+    def get_recipes(self, obj):
+        request = self.context.get('request')
+        limit = request.query_params.get('recipes_limit')
+        recipes = obj.recipes.all()
+        if limit:
+            recipes = recipes[:int(limit)]
+        return ReceipSmallSerializer(recipes, many=True).data
+
+    def get_recipes_count(self, obj):
+        return obj.recipes.count()

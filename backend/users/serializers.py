@@ -23,4 +23,4 @@ class CustomUserSerializer(UserSerializer):
         request = self.context.get('request')
         if request is None or not request.user.is_authenticated:
             return False
-        return request.user.following.filter(following=obj).exists()
+        return request.user.following.filter(author=obj).exists()
