@@ -5,6 +5,7 @@ djangorestframework==3.12.4
 djoser
 python-dotenv
 Pillow==9.0.0
-djangorestframework-simplejwt
 django-import-export==3.2.0
 django-filter
+gunicorn==20.1.0
+psycopg2-binary==2.9.3
