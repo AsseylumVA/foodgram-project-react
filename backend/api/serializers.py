@@ -204,7 +204,7 @@ class ReceipSmallSerializer(serializers.ModelSerializer):
 class FavoriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Favorite
-        fields = ('user', 'recipe',)
+        fields = '__all__'
         validators = [
             UniqueTogetherValidator(
                 queryset=Favorite.objects.all(),

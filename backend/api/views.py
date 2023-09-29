@@ -20,8 +20,7 @@ from .serializers import (FavoriteSerializer,
 from recipes.models import (Ingredient,
                             IngredientRecipe,
                             Recipe,
-                            Tag,
-                            Favorite)
+                            Tag)
 from users.models import Subscription
 
 User = get_user_model()
@@ -108,7 +107,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             data = {
                 'error': 'Рецепт ещё не добавлен в избранное'
             }
-            return Response(data, status.HTTP_400_BAD_REQUEST)    
+            return Response(data, status.HTTP_400_BAD_REQUEST)
         user.favorites.filter(recipe=recipe).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -119,9 +118,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=pk)
         user = request.user
         if request.method == 'POST':
-            if user.shopping_cart.filter(user=user).exists():
+            if user.shopping_cart.filter(recipe=recipe).exists():
                 data = {
-                    'error': 'Рецепт уже добавлен в избранное'
+                    'error': 'Рецепт уже добавлен в корзину'
                 }
                 return Response(data, status.HTTP_400_BAD_REQUEST)
             user.shopping_cart.create(recipe=recipe)
@@ -147,8 +146,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'ingredient__name',
             'ingredient__measurement_unit'
         ).annotate(ingredient_amount=Sum('amount'))
-        ingredients = list(ingredients)
-        response = HttpResponse(ingredients, content_type='text/plain')
+        shopping_list = ['Список покупок:\n']
+        for ingredient in ingredients:
+            name = ingredient['ingredient__name']
+            unit = ingredient['ingredient__measurement_unit']
+            amount = ingredient['ingredient_amount']
+            shopping_list.append(f'\n{name} - {amount}, {unit}')
+        response = HttpResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = \
             'attachment; filename="shopping_cart.txt"'
         return response

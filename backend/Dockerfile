@@ -6,5 +6,5 @@ COPY requirements.txt .
 RUN pip install --upgrade -r requirements.txt --no-cache-dir
 
 COPY . .
-
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "foodgram_backend.wsgi"]
+RUN python manage.py collectstatic
+CMD ["gunicorn", "--access-logfile", "-", "--bind", "0.0.0.0:8000", "foodgram_backend.wsgi"]
