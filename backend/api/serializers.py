@@ -6,11 +6,11 @@ from django.core.validators import MinValueValidator
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from recipes.models import (Tag,
+from recipes.models import (Favorite,
                             Ingredient,
-                            Recipe,
                             IngredientRecipe,
-                            Favorite)
+                            Recipe,
+                            Tag,)
 from users.models import Subscription
 from users.serializers import CustomUserSerializer
 
@@ -116,12 +116,12 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     ingredients = IngredientRecipePostSerializer(
         many=True,
         source='recipe_ingredients'
-        )
+    )
     cooking_time = serializers.IntegerField(
         validators=(MinValueValidator(
             limit_value=1,
             message=('Время приготовление не должно быть меньше 1')
-            ),
+        ),
         )
     )
 
