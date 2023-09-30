@@ -1,7 +1,6 @@
 from django.contrib import admin
 from import_export.resources import ModelResource
 from import_export.admin import ImportExportModelAdmin
-from import_export.fields import Field
 
 from recipes.models import (Ingredient,
                             Recipe,
@@ -15,24 +14,23 @@ class IngredientResource(ModelResource):
 
 class IngredientAdmin(ImportExportModelAdmin):
     resource_class = IngredientResource
+    list_display = ('pk', 'name', 'measurement_unit')
+    search_fields = ('name',)
 
 
-class TagResource(ModelResource):
-    class Meta:
-        model = Tag
-
-
-class TagAdmin(ImportExportModelAdmin):
-    resource_class = TagResource
-
-
-class RecipeResource(ModelResource):
-    class Meta:
-        model = Recipe
+class TagAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'name', 'color', 'slug')
+    search_fields = ('name', 'color', 'slug')
+    list_filter = ('name', 'color', 'slug')
 
 
 class RecipeAdmin(ImportExportModelAdmin):
-    resource_class = RecipeResource
+    list_display = ('pk', 'name', 'author', 'favorites_amount')
+    search_fields = ('name', 'author')
+    list_filter = ('name', 'author', 'tags')
+
+    def favorites_amount(self, obj):
+        return obj.favorites.count()
 
 
 admin.site.register(Ingredient, IngredientAdmin)

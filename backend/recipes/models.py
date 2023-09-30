@@ -9,13 +9,18 @@ class Tag(models.Model):
     color = models.CharField(max_length=16, unique=True)
     slug = models.SlugField(unique=True)
 
+    def __str__(self):
+        return self.name
+
 
 class Ingredient(models.Model):
     name = models.CharField(max_length=256)
     measurement_unit = models.CharField(
-        verbose_name="Единицы измерения",
         max_length=24
     )
+
+    def __str__(self):
+        return self.name
 
 
 class Recipe(models.Model):
@@ -37,6 +42,12 @@ class Recipe(models.Model):
         through='IngredientRecipe')
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     cooking_time = models.PositiveSmallIntegerField('Время приготовления',)
+
+    class Meta:
+        ordering = ['-pub_date']
+
+    def __str__(self):
+        return self.name
 
 
 class TagRecipe(models.Model):
