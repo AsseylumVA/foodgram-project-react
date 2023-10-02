@@ -13,7 +13,7 @@ class IngredientResource(ModelResource):
 
 
 class IngredientInLine(admin.TabularInline):
-    model = Ingredient
+    model = Ingredient.recipes.through
 
 
 @admin.register(Ingredient)
