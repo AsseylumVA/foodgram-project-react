@@ -22,6 +22,8 @@ from recipes.models import (Ingredient,
                             Recipe,
                             Tag)
 from users.models import Subscription
+from errors import (RECIPE_FAVORITE_ERROR, SHOPPING_CART_ALLREADY_IN_ERROR,
+                    SHOPPING_CART_NOT_IN_ERROR, SUBSCRIBE_ERROR)
 
 User = get_user_model()
 
@@ -38,11 +40,10 @@ class UserSubscribeView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, user_id):
-        author = get_object_or_404(User, id=user_id)
         if not Subscription.objects.filter(user=request.user,
-                                           author=author).exists():
+                                           author__id=user_id).exists():
             return Response(
-                {'errors': 'Вы не подписаны на этого пользователя'},
+                {'errors': SUBSCRIBE_ERROR},
                 status=status.HTTP_400_BAD_REQUEST
             )
         Subscription.objects.get(user=request.user.id,
@@ -105,7 +106,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status.HTTP_400_BAD_REQUEST)
         if not user.favorites.filter(recipe=recipe).exists():
             data = {
-                'error': 'Рецепт ещё не добавлен в избранное'
+                'error': RECIPE_FAVORITE_ERROR
             }
             return Response(data, status.HTTP_400_BAD_REQUEST)
         user.favorites.filter(recipe=recipe).delete()
@@ -120,7 +121,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == 'POST':
             if user.shopping_cart.filter(recipe=recipe).exists():
                 data = {
-                    'error': 'Рецепт уже добавлен в корзину'
+                    'error': SHOPPING_CART_ALLREADY_IN_ERROR
                 }
                 return Response(data, status.HTTP_400_BAD_REQUEST)
             user.shopping_cart.create(recipe=recipe)
@@ -129,7 +130,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         if not user.shopping_cart.filter(recipe=recipe).exists():
             data = {
-                'error': 'Рецепт ещё не добавлен в корзину'
+                'error': SHOPPING_CART_NOT_IN_ERROR
             }
             return Response(data, status.HTTP_400_BAD_REQUEST)
         user.shopping_cart.filter(recipe=recipe).delete()
@@ -139,19 +140,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             detail=False,
             permission_classes=[permissions.IsAuthenticated])
     def download_shopping_cart(self, request, pk=None):
-        user = request.user
         ingredients = IngredientRecipe.objects.filter(
-            recipe__shopping_cart__user=user
+            recipe__shopping_cart__user=request.user
         ).values(
             'ingredient__name',
             'ingredient__measurement_unit'
         ).annotate(ingredient_amount=Sum('amount'))
-        shopping_list = ['Список покупок:\n']
-        for ingredient in ingredients:
-            name = ingredient['ingredient__name']
-            unit = ingredient['ingredient__measurement_unit']
-            amount = ingredient['ingredient_amount']
-            shopping_list.append(f'\n{name} - {amount}, {unit}')
+        shopping_list = [' - '.join(map(str, x.values())) for x in ingredients]
         response = HttpResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = \
             'attachment; filename="shopping_cart.txt"'

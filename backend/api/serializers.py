@@ -19,6 +19,17 @@ User = get_user_model()
 MIN_INGREDIENT_AMOUNT = 1
 
 
+def create_IngredientRecipe_relation(ingredients_data, recipe):
+    instances = []
+    for ingredient_data in ingredients_data:
+        ingredient_obj = ingredient_data.get('id')
+        amount = ingredient_data.get('amount')
+        instances.append(IngredientRecipe(recipe=recipe,
+                                          ingredient=ingredient_obj,
+                                          amount=amount))
+    IngredientRecipe.objects.bulk_create(instances)
+
+
 class Base64ImageField(serializers.ImageField):
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
@@ -64,6 +75,14 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField(read_only=True)
     author = CustomUserSerializer(read_only=True)
     is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
+    cooking_time = serializers.IntegerField(
+        validators=(
+            MinValueValidator(
+                limit_value=1,
+                message=('Время приготовления не может быть меньше 1')
+            ),
+        )
+    )
 
     class Meta:
         model = Recipe
@@ -159,13 +178,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         recipe = Recipe.objects.create(author=user, **validated_data)
         recipe.tags.set(tags_data)
-
-        for ingredient_data in ingredients_data:
-            ingredient_obj = ingredient_data.get('id')
-            amount = ingredient_data.get('amount')
-            IngredientRecipe.objects.create(
-                recipe=recipe, ingredient=ingredient_obj, amount=amount
-            )
+        create_IngredientRecipe_relation(ingredients_data, recipe)
         return recipe
 
     def update(self, instance, validated_data):
@@ -181,12 +194,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         instance.text = validated_data.get('text', instance.text)
         instance.cooking_time = validated_data.get('cooking_time',
                                                    instance.cooking_time)
-        for ingredient_data in ingredients_data:
-            ingredient_obj = ingredient_data.get('id')
-            amount = ingredient_data.get('amount')
-            IngredientRecipe.objects.create(
-                recipe=instance, ingredient=ingredient_obj, amount=amount
-            )
+        create_IngredientRecipe_relation(ingredients_data, instance)
         instance.save()
         return instance
 
