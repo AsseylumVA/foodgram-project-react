@@ -146,7 +146,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'ingredient__name',
             'ingredient__measurement_unit'
         ).annotate(ingredient_amount=Sum('amount'))
-        shopping_list = [' - '.join(map(str, x.values())) for x in ingredients]
+        shopping_list = [' - '.join(map(str, x.values())) + '\n'
+                         for x in ingredients]
         response = HttpResponse(shopping_list, content_type='text/plain')
         response['Content-Disposition'] = \
             'attachment; filename="shopping_cart.txt"'
