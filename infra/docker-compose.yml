@@ -10,11 +10,17 @@ services:
     env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   backend:
     image: asseylumva/foodgram_backend
     env_file: .env
     depends_on:
-      - foodgram_db
+      foodgram_db:
+        condition: service_healthy
     volumes:
       - media:/app/media
   frontend:
