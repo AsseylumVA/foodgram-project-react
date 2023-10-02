@@ -22,8 +22,8 @@ from recipes.models import (Ingredient,
                             Recipe,
                             Tag)
 from users.models import Subscription
-from errors import (RECIPE_FAVORITE_ERROR, SHOPPING_CART_ALLREADY_IN_ERROR,
-                    SHOPPING_CART_NOT_IN_ERROR, SUBSCRIBE_ERROR)
+from .errors import (RECIPE_FAVORITE_ERROR, SHOPPING_CART_ALLREADY_IN_ERROR,
+                     SHOPPING_CART_NOT_IN_ERROR, SUBSCRIBE_ERROR)
 
 User = get_user_model()
 
