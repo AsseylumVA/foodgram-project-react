@@ -19,14 +19,12 @@ User = get_user_model()
 MIN_INGREDIENT_AMOUNT = 1
 
 
-def create_IngredientRecipe_relation(ingredients_data, recipe):
-    instances = []
-    for ingredient_data in ingredients_data:
-        ingredient_obj = ingredient_data.get('id')
-        amount = ingredient_data.get('amount')
-        instances.append(IngredientRecipe(recipe=recipe,
-                                          ingredient=ingredient_obj,
-                                          amount=amount))
+def create_ingredient_recipe_relation(ingredients_data, recipe):
+    instances = [IngredientRecipe(
+        recipe=recipe,
+        ingredient=x['id'],
+        amount=x['amount']
+    ) for x in ingredients_data]
     IngredientRecipe.objects.bulk_create(instances)
 
 
@@ -163,8 +161,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'errors': 'Не добавлены ингредиенты'}
             )
-        ingredients = list(map(lambda x: x['id'],
-                               data.get('recipe_ingredients')))
+        ingredients = [x['id'] for x in data.get('recipe_ingredients')]
         if len(set(ingredients)) != len(ingredients):
             raise serializers.ValidationError(
                 {'errors': 'нельзя добавить два одинаковых ингредиента'}
@@ -178,7 +175,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         tags_data = validated_data.pop('tags')
         recipe = Recipe.objects.create(author=user, **validated_data)
         recipe.tags.set(tags_data)
-        create_IngredientRecipe_relation(ingredients_data, recipe)
+        create_ingredient_recipe_relation(ingredients_data, recipe)
         return recipe
 
     def update(self, instance, validated_data):
@@ -186,7 +183,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         IngredientRecipe.objects.filter(recipe=instance).delete()
 
         tags_data = validated_data.pop('tags')
-        instance.tags.clear()
         instance.tags.set(tags_data)
 
         instance.image = validated_data.get('image', instance.image)
@@ -194,13 +190,12 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         instance.text = validated_data.get('text', instance.text)
         instance.cooking_time = validated_data.get('cooking_time',
                                                    instance.cooking_time)
-        create_IngredientRecipe_relation(ingredients_data, instance)
+        create_ingredient_recipe_relation(ingredients_data, instance)
         instance.save()
         return instance
 
     def to_representation(self, instance):
-        serializer = RecipeSerializer(instance)
-        return serializer.data
+        return RecipeSerializer(instance).data
 
 
 class ReceipSmallSerializer(serializers.ModelSerializer):
@@ -222,8 +217,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
         ]
 
     def to_representation(self, instance):
-        serializer = ReceipSmallSerializer(instance.recipe)
-        return serializer.data
+        return ReceipSmallSerializer(instance.recipe).data
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
@@ -263,12 +257,18 @@ class SubscribeReprSerializer(CustomUserSerializer):
                             'first_name', 'last_name', 'is_subscribed',
                             'recipes', 'recipes_count')
 
+    def value_to_int(value):
+        try:
+            return int(value)
+        except: # noqa
+            return None
+
     def get_recipes(self, obj):
         request = self.context.get('request')
-        limit = request.query_params.get('recipes_limit')
+        limit = self.value_to_int(request.query_params.get('recipes_limit'))
         recipes = obj.recipes.all()
         if limit:
-            recipes = recipes[:int(limit)]
+            recipes = recipes[:limit]
         return ReceipSmallSerializer(recipes, many=True).data
 
     def get_recipes_count(self, obj):

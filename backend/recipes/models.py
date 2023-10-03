@@ -1,5 +1,6 @@
 from colorfield.fields import ColorField
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator
 from django.db import models
 
 User = get_user_model()
@@ -51,7 +52,13 @@ class Recipe(models.Model):
         through='IngredientRecipe',
         related_name='recipes')
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
-    cooking_time = models.PositiveSmallIntegerField('Время приготовления',)
+    cooking_time = models.PositiveSmallIntegerField(
+        'Время приготовления',
+        validators=(MinValueValidator(
+            1,
+            'Время приготовление не должно быть меньше 1'
+        ),)
+    )
 
     class Meta:
         ordering = ['-pub_date']
