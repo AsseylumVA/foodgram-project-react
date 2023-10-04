@@ -13,6 +13,7 @@ from recipes.models import (Favorite,
                             Tag,)
 from users.models import Subscription
 from users.serializers import CustomUserSerializer
+from .utils import value_to_int
 
 User = get_user_model()
 
@@ -257,15 +258,9 @@ class SubscribeReprSerializer(CustomUserSerializer):
                             'first_name', 'last_name', 'is_subscribed',
                             'recipes', 'recipes_count')
 
-    def value_to_int(value):
-        try:
-            return int(value)
-        except: # noqa
-            return None
-
     def get_recipes(self, obj):
         request = self.context.get('request')
-        limit = self.value_to_int(request.query_params.get('recipes_limit'))
+        limit = value_to_int(request.query_params.get('recipes_limit'))
         recipes = obj.recipes.all()
         if limit:
             recipes = recipes[:limit]

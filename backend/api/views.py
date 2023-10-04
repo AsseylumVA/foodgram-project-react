@@ -46,8 +46,8 @@ class UserSubscribeView(APIView):
                 {'errors': SUBSCRIBE_ERROR},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        Subscription.objects.get(user=request.user.id,
-                                 author=user_id).delete()
+        Subscription.objects.filter(user=request.user.id,
+                                    author=user_id).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -78,7 +78,9 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
+    queryset = Recipe.objects.all().prefetch_related('tags',
+                                                     'ingredients',
+                                                     'author')
     permission_classes = (AuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
