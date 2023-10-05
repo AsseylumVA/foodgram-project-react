@@ -133,4 +133,5 @@ dmypy.json
 
 media
 static
+recipes/images
 .vscode
