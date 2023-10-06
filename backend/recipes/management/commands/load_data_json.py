@@ -1,7 +1,11 @@
+import logging
 import json
 
 from django.apps import apps
 from django.core.management import BaseCommand
+
+logging.basicConfig(level=logging.INFO,
+                    format="%(asctime)s %(levelname)s %(message)s")
 
 
 class Command(BaseCommand):
@@ -17,11 +21,10 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        file_path = options['path']
         model = apps.get_model(options['app_name'], options['model_name'])
-        with open(file_path, 'rt', encoding='utf-8') as f:
-            ingredients_data = json.load(f)
-            instances = [model(**x) for x in ingredients_data]
+        with open(options['path'], 'rt', encoding='utf-8') as f:
+            instance_data = json.load(f)
+            instances = [model(**x) for x in instance_data]
             model.objects.bulk_create(instances)
-            print(f'data loaded successfully. Created {len(instances)} '
-                  f'{model.__name__}''s')
+            logging.info(f'Data loaded successfully. Created {len(instances)} '
+                         f'{model.__name__}''s')

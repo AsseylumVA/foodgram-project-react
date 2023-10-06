@@ -11,8 +11,7 @@ class RecipeFilter(filters.FilterSet):
     )
     author = filters.ModelChoiceFilter(queryset=User.objects.all())
     tags = filters.ModelMultipleChoiceFilter(queryset=Tag.objects.all(),
-                                             field_name='tags__slug',
-                                             to_field_name='slug')
+                                             field_name='tags__slug',)
 
     def get_is_favorited(self, queryset, name, value):
         if self.request.user.is_authenticated:
