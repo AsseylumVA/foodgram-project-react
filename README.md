@@ -8,7 +8,7 @@
 
 ### Как запустить проект на боевом сервере:
 
-Установить на сервере docker и docker-compose. Скопировать на сервер файлы docker-compose.yaml и default.conf:
+Установить на сервере docker и docker-compose. Скопировать на сервер файлы docker-compose.yml и default.conf:
 
 ```
 cd infra/
